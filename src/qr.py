@@ -1,26 +1,8 @@
-from time import asctime
+import sys
+from time import asctime, sleep
 import qrcode
 import cv2
 import psycopg2 as psy
-
-cap = cv2.VideoCapture(0)
-detector = cv2.QRCodeDetector()
-
-img = cv2.imread('/home/squirry/Pictures/coffee/emilio.png', cv2.IMREAD_GRAYSCALE)
-data, bbox, _ = detector.detectAndDecode(img)
-
-# bbox = None
-# while bbox is None:
-# 	state, img = cap.read()
-# 	if state:
-# 		print("QR code detected\n")
-# 		data, bbox, _ = detector.detectAndDecode(img)
-# 		print(f"ID:\n{data}")
-# 		cap.release()
-# 	else:
-# 		print("No QR code detected\n")
-# 		time.sleep(.5)
-
 
 class event:
     def __init__(self, data):
@@ -46,7 +28,38 @@ class event:
     def db_close(self):
         self.conn.close()
 
-ev = event(data)
-ev.db_connect()
-ev.db_add_coffee()
-ev.db_close()
+# initialize camera and detector
+cap = cv2.VideoCapture(4)
+detector = cv2.QRCodeDetector()
+
+# capture camera until a QR code is found or 
+# five seconds passed
+freq = int(sys.argv[1]) if len(sys.argv) > 1 else 4 #default to 4
+time = 0
+max_elapsed = 5 * freq
+bbox = None
+data = ''
+while (bbox is None or len(data) == 0) and time < max_elapsed:
+    time += 1
+    state, img = cap.read()
+    if state:
+        data, bbox, _ = detector.detectAndDecode(img)
+        if bbox is not None and len(data) > 0:
+            print("QR code detected - ID: {}".format(data))
+            exit_status = 0
+            cap.release()
+        else:
+            print("No QR code detected")
+            sleep(1 / freq)
+    else:
+        print("No video connection")
+        sleep(1 / freq)
+
+if bbox is None and time == max_elapsed:
+    exit_status = 1
+    print("No QR code found. Exiting...")
+
+# ev = event(data)
+# ev.db_connect()
+# ev.db_add_coffee()
+# ev.db_close()
