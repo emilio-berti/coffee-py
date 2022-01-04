@@ -55,9 +55,9 @@ while (bbox is None or len(data) == 0) and time < max_elapsed:
         print("No video connection")
         sleep(1 / freq)
 
-if bbox is None and time == max_elapsed:
+if (bbox is None or len(data) == 0) and time == max_elapsed:
     exit_status = 1
-    print("No QR code found. Exiting...")
+    print("No QR code found (Error {}). Exiting...".format(exit_status))
 
 # ev = event(data)
 # ev.db_connect()
